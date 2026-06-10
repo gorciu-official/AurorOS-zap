@@ -6,7 +6,7 @@
 
 multiboot_info_t* arch_x86_64_multiboot_mb;
 
-extern void main(void);
+extern void kmain(void);
 extern void idt_init(void);
 
 static inline int is_long_mode(void) {
@@ -33,11 +33,11 @@ void arch_x86_64_late_start() {
         kernelpanic("FS_BROKEN", NULL);
     }
 
-    main();
+    kmain();
 }
 
 void arch_x86_64_set_mb(multiboot_info_t* mb) {
-    arch_x86_64_multiboot_mb = mb; 
+    arch_x86_64_multiboot_mb = mb;
     if (!mb) {
         kernelpanic("MB_STRUCT_NOT_AVAILABLE", "GRUB2 multiboot2 header required");
     }

@@ -7,7 +7,7 @@
 #include <asm/multiboot.h>
 #include <wait.h>
 
-extern void main(void);
+extern void kmain(void);
 
 extern void gdt_install();
 extern void idt_init();
@@ -58,5 +58,5 @@ void arch_x86_protected_mode_entry() {
 
     asm volatile ("sti");
 
-    main();
+    kmain();
 }

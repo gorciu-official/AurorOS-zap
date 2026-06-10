@@ -9,13 +9,15 @@ $(error Unsupported ARCH='$(ARCH)'. Supported values: $(SUPPORTED_ARCHES))
 endif
 
 ifeq ($(ARCH), x86)
-    ARCH_M = 32
-    ARCH_ELFFORMAT = i386
-    ARCH_COMMON = x86_common
-else 
-    ARCH_M = 64
-    ARCH_ELFFORMAT = x86_64
-    ARCH_COMMON = x86_common
+	ARCH_M 		   = 32
+	ARCH_ELFFORMAT = i386
+	ARCH_COMMON    = x86_common
+	LLVM_TARGET    = i386-unknown-none
+else
+	ARCH_M 		   = 64
+	ARCH_ELFFORMAT = x86_64
+	ARCH_COMMON    = x86_common
+	LLVM_TARGET    = x86_64-unknown-none
 endif
 
 # directories
@@ -32,9 +34,24 @@ ISO_FILE       := $(ROOT_DIR)/AurorOS.iso
 LINKER_SCRIPT  := $(ARCH_DIR)/build/linker.ld
 GRUB_CONFIG    := $(ARCH_DIR)/build/grub.cfg
 
+# tools
+CC   ?= cc
+NASM ?= nasm
+ZAPC ?= zapc
+LLC  ?= llc
+
+CFLAGS := \
+	-g -Wall -Wextra -m$(ARCH_M) -mno-sse -mno-sse2 -mno-sse3 -mno-mmx \
+	-ffreestanding -nostartfiles -Iinclude -nostdlib -fno-stack-protector
+
+ZAP_FLAGS := -nostdlib -noprelude -O2
+LLC_FLAGS := --mtriple=$(LLVM_TARGET)
+
 # sources
 C_SOURCES      := $(shell find $(SRC_DIR) -type f -name '*.c' ! -name '*.excluded.c')
 ASM_SOURCES    := $(shell find $(SRC_DIR) -type f -name '*.asm')
+
+ZAP_ENTRY      := $(SRC_DIR)/main/main.zp
 
 # filtered sources
 C_SOURCES_FILTERED := \
@@ -49,33 +66,49 @@ ASM_SOURCES_FILTERED := \
 # objects
 C_OBJECTS      := $(patsubst $(SRC_DIR)/%.c,$(BIN_DIR)/%.o,$(C_SOURCES_FILTERED))
 ASM_OBJECTS    := $(patsubst $(SRC_DIR)/%.asm,$(BIN_DIR)/%.o,$(ASM_SOURCES_FILTERED))
+ZAP_LLIR       := $(BIN_DIR)/main/main.ll
+ZAP_OBJ        := $(BIN_DIR)/main/main.o
 
 # all objects
-OBJECTS        := $(C_OBJECTS) $(ASM_OBJECTS)
+OBJECTS        := $(C_OBJECTS) $(ASM_OBJECTS) $(ZAP_OBJ)
 
 # main target
-all: build_kernel build_iso
+all: build-kernel build-iso
 	@echo -e "\033[32mSuccess!\033[0m"
+
+build-kernel: $(KERNEL_BIN)
+build-iso:    $(ISO_FILE)
 
 # build c sources
 $(BIN_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(dir $@)
 	@echo -e "\033[1;36m[*]\033[0m $< -> $@"
-	@gcc -g -Wall -Wextra -m$(ARCH_M) -mno-sse -mno-sse2 -mno-sse3 -mno-mmx -ffreestanding -nostartfiles -Iinclude -nostdlib -fno-stack-protector -c $< -o $@
+	@$(CC) $(CFLAGS) -c $< -o $@
 
 # build assembly sources
 $(BIN_DIR)/%.o: $(SRC_DIR)/%.asm
 	@mkdir -p $(dir $@)
 	@echo -e "\033[1;36m[*]\033[0m $< -> $@"
-	@nasm -f elf$(ARCH_M) $< -o $@
+	@$(NASM) -f elf$(ARCH_M) $< -o $@
+
+# build zap entry point
+$(ZAP_LLIR): $(ZAP_ENTRY)
+	@mkdir -p $(dir $@)
+	@echo -e "\033[1;36m[*]\033[0m zap sources -> $@"
+	@$(ZAPC) $(ZAP_FLAGS) $< -emit-llvm -o $@
+
+$(ZAP_OBJ): $(ZAP_LLIR)
+	@mkdir -p $(dir $@)
+	@echo -e "\033[1;36m[*]\033[0m $< -> $@"
+	@$(LLC) $(LLC_FLAGS) $< --filetype=obj -o $@
 
 # link the kernel
-build_kernel: $(OBJECTS)
+$(KERNEL_BIN): $(OBJECTS) $(LINKER_SCRIPT)
 	@echo -e "\033[1;33m[*]\033[0m Linking objects -> kernel binary"
-	@ld -m elf_$(ARCH_ELFFORMAT) -T $(LINKER_SCRIPT) -o $(KERNEL_BIN) $(OBJECTS)
+	@ld -m elf_$(ARCH_ELFFORMAT) -T $(LINKER_SCRIPT) -o $@ $(OBJECTS)
 
 # build the iso
-build_iso: build_kernel
+$(ISO_FILE): $(KERNEL_BIN)
 	@echo -e "\033[1;33m[*]\033[0m Creating ISO directory structure"
 	@mkdir -p $(GRUB_DIR)
 	@cp $(KERNEL_BIN) $(BOOT_DIR)
@@ -92,7 +125,7 @@ clean:
 run: all
 	qemu-system-x86_64 -cdrom AurorOS.iso
 
-run_dbg: all
+run-gdb: all
 	@chmod +x scripts/run_debug_mode.sh
 	./scripts/run_debug_mode.sh $(ARCH_ELFFORMAT)
 
