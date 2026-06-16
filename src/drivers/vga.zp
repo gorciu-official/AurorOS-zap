@@ -1,0 +1,212 @@
+import "misc/ports" { outb, inb };
+import "../lib/sv" { StringView };
+
+pub alias Color = UInt8;
+pub const DEFAULT_COLOR: Color = 0x07;
+
+const SCREEN_WIDTH:  UInt16 = 80;
+const SCREEN_HEIGHT: UInt16 = 25;
+
+global var videoMemory: *UInt16;
+global var cursorPos: UInt16 = 0;
+
+ext fun strlen(s: *Char) UInt32;
+
+pub fun init() {
+    videoMemory = 0xB8000 as *UInt16;
+}
+
+fun at(index: UInt16) ref UInt16 {
+    unsafe { return *(videoMemory + index); }
+}
+
+fun charToInt(c: Char) UInt8 {
+    unsafe { return *(&c as *UInt8); }
+}
+fun charFromInt(i: UInt8) Char {
+    unsafe { return *(&i as *Char); }
+}
+
+fun updateCursor() {
+    var pos: UInt16 = cursorPos;
+    outb(0x3D4, 0x0F);
+    outb(0x3D5, (pos & 0xFF) as UInt8);
+    outb(0x3D4, 0x0E);
+    outb(0x3D5, ((pos >> 8) & 0xFF) as UInt8);
+}
+
+fun scroll() {
+    for var row: UInt16 = 0; row < SCREEN_HEIGHT - 1; row = row + 1 {
+        for var col: UInt16 = 0; col < SCREEN_WIDTH; col = col + 1 {
+            at(row * SCREEN_WIDTH + col) = at((row + 1) * SCREEN_WIDTH + col);
+        }
+    }
+
+    for var col: UInt16 = 0; col < SCREEN_WIDTH; col = col + 1 {
+        at((SCREEN_HEIGHT - 1) * SCREEN_WIDTH + col) = (charToInt(' ') as UInt16) | (0x07 << 8);
+    }
+
+    cursorPos = (SCREEN_HEIGHT - 1) * SCREEN_WIDTH;
+}
+
+pub fun printChar(c: Char, color: Color) {
+    if (c == '\n') {
+        cursorPos = cursorPos + (SCREEN_WIDTH - (cursorPos % SCREEN_WIDTH));
+    } else {
+        at(cursorPos) = ((color as UInt16) << 8) | (charToInt(c) as UInt16);
+        cursorPos = cursorPos + 1;
+    }
+
+    if (cursorPos >= SCREEN_WIDTH * SCREEN_HEIGHT) {
+        scroll();
+    }
+
+    updateCursor();
+}
+
+pub fun printString(str: StringView, color: Color) {
+    for var i: UInt32 = 0; i < str.len; i = i + 1 {
+        printchar(sv.at(str, i), color);
+    }
+}
+
+pub fun printStringCenter(str: StringView, color: UInt8) {
+    var len: UInt32 = str.len;
+    if (len > (SCREEN_WIDTH as UInt32)) {
+        len = SCREEN_WIDTH as UInt32;
+    }
+
+    var col: UInt16 = (SCREEN_WIDTH - len as UInt16) / 2;
+    var row: UInt16 = cursorPos / SCREEN_WIDTH;
+    cursorPos = row * SCREEN_WIDTH + col;
+
+    for var i: UInt32 = 0; i < len; i = i + 1 {
+        at(cursorPos) = ((color as UInt16) << 8) | (charToInt(sv.at(str, i)) as UInt16);
+        cursorPos = cursorPos + 1;
+    }
+
+    updateCursor();
+}
+
+pub fun printInt(value: UInt16, color: Color) {
+    var val: UInt16 = value;
+    var buffer: [7]Char;
+    var index: Int32 = 6;
+
+    buffer[index] = '\0';
+    index = index - 1;
+
+    if (val == 0) {
+        buffer[index] = '0';
+        index = index - 1;
+    } else {
+        while (val > 0) {
+            buffer[index] = charFromInt(charToInt('0') + (val % 10) as UInt8);
+            val = val / 10;
+            index = index - 1;
+        }
+    }
+
+    for var i: Int32 = index + 1; buffer[i] != '\0'; i = i + 1 {
+        printChar(' ', 0x07);
+        printChar(buffer[i], color);
+    }
+}
+
+pub fun deleteChar() {
+    if (cursorPos > 0) {
+        cursorPos = cursorPos - 1;
+        at(cursorPos) = (charToInt(' ') as UInt16) | (0x07 << 8);
+        updateCursor();
+    } else {
+        at(cursorPos) = (charToInt(' ') as UInt16) | (0x07 << 8);
+    }
+}
+
+pub fun clearScreen() {
+    for var i: UInt16 = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT; i = i + 1 {
+        at(i) = (charToInt(' ') as UInt16) | (0x07 << 8);
+    }
+    cursorPos = 0;
+    updateCursor();
+}
+
+pub fun paintScreen(color: Color) {
+    for var i: UInt16 = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT; i = i + 1 {
+        at(i) = (charToInt(' ') as UInt16) | ((color as UInt16) << 8);
+    }
+    cursorPos = 0;
+    updateCursor();
+}
+
+pub fun clearLine(line: UInt16) {
+    if (line >= SCREEN_HEIGHT) { return; }
+
+    for var col: UInt16 = 0; col < SCREEN_WIDTH; col = col + 1 {
+        at(line * SCREEN_WIDTH + col) = (charToInt(' ') as UInt16) | (0x07 << 8);
+    }
+
+    if (cursorPos / SCREEN_WIDTH == line) {
+        cursorPos = line * SCREEN_WIDTH;
+        updateCursor();
+    }
+}
+
+pub fun paintLine(line: UInt16, color: Color) {
+    if (line >= SCREEN_HEIGHT) { return; }
+
+    for var col: UInt16 = 0; col < SCREEN_WIDTH; col = col + 1 {
+        at(line * SCREEN_WIDTH + col) = (charToInt(' ') as UInt16) | ((color as UInt16) << 8);
+    }
+
+    if (cursorPos / SCREEN_WIDTH == line) {
+        cursorPos = line * SCREEN_WIDTH;
+        updateCursor();
+    }
+}
+
+// syntactic-sugar wrappers using DEFAULT_COLOR
+// because hard-coding 0x07 everywhere sucks.
+pub fun printChar(c: Char) { printChar(c, DEFAULT_COLOR); }
+pub fun printInt(value: UInt16) { printInt(value, DEFAULT_COLOR); }
+pub fun printString(s: StringView) { printString(s, DEFAULT_COLOR); }
+pub fun printStringCenter(s: StringView) { printStringCenter(s, DEFAULT_COLOR); }
+
+// C compatibility layer
+// TODO: delete this section after the entire
+//       kernel has been rewritten in zap
+@{extern("C"), noMangle}
+fun clearscreen() { clearScreen(); }
+@{extern("C"), noMangle}
+fun delchar() { deleteChar(); }
+
+@{extern("C"), noMangle}
+fun printstr_len(str: *Char, len: UInt32, color: Color) {
+    printString(sv.from(str, len), color);
+}
+@{extern("C"), noMangle}
+fun printstr(str: *Char, color: Color) {
+    printstr_len(str, strlen(str), color);
+}
+
+@{extern("C"), noMangle}
+fun printct_len(str: *Char, length: UInt32, color: Color) {
+    printStringCenter(sv.from(str, length), color);
+}
+@{extern("C"), noMangle}
+fun printct(str: *Char, color: Color) {
+    printct_len(str, strlen(str), color);
+}
+
+@{extern("C"), noMangle}
+fun printchar(c: Char, color: Color) { printChar(c, color); }
+@{extern("C"), noMangle}
+fun printint(value: UInt16, color: Color) { printInt(value, color); }
+
+@{extern("C"), noMangle}
+fun clearline(line: UInt16) { clearLine(line); }
+
+@{extern("C"), noMangle}
+fun paintscreen(color: Color)             { paintScreen(color); }
+@{extern("C"), noMangle}
+fun paintline(line: UInt16, color: Color) { paintLine(line, color); }

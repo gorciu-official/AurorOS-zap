@@ -1,0 +1,7 @@
+pub ext fun inb(port: UInt16) UInt8;
+pub ext fun inw(port: UInt16) UInt16;
+pub ext fun inl(port: UInt16) UInt32;
+
+pub ext fun outb(port: UInt16, value: UInt8);
+pub ext fun outw(port: UInt16, data: UInt16);
+pub ext fun outl(port: UInt16, val: UInt32);

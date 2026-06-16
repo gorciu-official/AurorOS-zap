@@ -1,12 +1,14 @@
+import "../drivers/vga";
 import "../lib/log";
 
-ext fun clearscreen();
 ext fun terminal_main(theme: UInt16) Int; // from /apps/terminal/tty.c
 ext fun shutdown();
 
 @{extern("C"), noMangle}
 fun kmain() Void {
-    clearscreen();
+    vga.init();
+
+    vga.clearScreen();
     log.println("");
     log.println("                        @@@@@@@@@                           ", 0x0B);
     log.println("                       @@@@@@@@@@@@@@                       ", 0x0B);

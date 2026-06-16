@@ -1,38 +1,38 @@
-pub import "../drivers/vga/vga";
-pub import "../drivers/vga/vga" { Color };
+pub import "../drivers/vga";
+pub import "../drivers/vga" { Color };
 
-pub import "../lib/str" { StringView };
+pub import "../lib/sv" { StringView };
 
 pub fun printError(str: StringView) {
-    vga.printString("[ ", 0x07);
+    vga.printString("[ ");
     vga.printString("ERROR", 0x04);
-    vga.printString(" ] ", 0x07);
-    vga.printString(str, 0x07);
-    vga.printString("\n", 0x07);
+    vga.printString(" ] ");
+    vga.printString(str);
+    vga.printString("\n");
 }
 
 pub fun printInfo(str: StringView) {
-    vga.printString("[ ", 0x07);
+    vga.printString("[ ");
     vga.printString("INFO", 0x01);
-    vga.printString(" ] ", 0x07);
-    vga.printString(str, 0x07);
-    vga.printString("\n", 0x07);
+    vga.printString(" ] ");
+    vga.printString(str);
+    vga.printString("\n");
 }
 
 pub fun printWarn(str: StringView) {
-    vga.printString("[ ", 0x07);
+    vga.printString("[ ");
     vga.printString("WARNING", 0x0E);
-    vga.printString(" ] ", 0x07);
-    vga.printString(str, 0x07);
-    vga.printString("\n", 0x07);
+    vga.printString(" ] ");
+    vga.printString(str);
+    vga.printString("\n");
 }
 
 pub fun printOk(str: StringView) {
-    vga.printString("[ ", 0x07);
+    vga.printString("[ ");
     vga.printString("OK", 0x02);
-    vga.printString(" ] ", 0x07);
-    vga.printString(str, 0x07);
-    vga.printString("\n", 0x07);
+    vga.printString(" ] ");
+    vga.printString(str);
+    vga.printString("\n");
 }
 
 pub fun printCustom(str: StringView, color: Color, scolor: Color) {
@@ -50,5 +50,5 @@ pub fun println(str: StringView, color: Color) {
     vga.printChar('\n', color);
 }
 
-pub fun print(str: StringView)   { print(str, vga.DefaultColor);   }
-pub fun println(str: StringView) { println(str, vga.DefaultColor); }
+pub fun print(str: StringView)   { print(str, vga.DEFAULT_COLOR);   }
+pub fun println(str: StringView) { println(str, vga.DEFAULT_COLOR); }

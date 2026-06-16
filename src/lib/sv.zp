@@ -1,0 +1,12 @@
+pub struct StringView {
+    data: *Char,
+    len: UInt32,
+}
+
+pub fun at(s: StringView, index: UInt32) Char {
+    unsafe { return *(s.data + index); }
+}
+
+pub fun from(d: *Char, l: UInt32) StringView {
+    return StringView { data: d, len: l };
+}
