@@ -50,6 +50,7 @@ LLC_FLAGS := --mtriple=$(LLVM_TARGET)
 # sources
 C_SOURCES      := $(shell find $(SRC_DIR) -type f -name '*.c' ! -name '*.excluded.c')
 ASM_SOURCES    := $(shell find $(SRC_DIR) -type f -name '*.asm')
+ZAP_SOURCES    := $(shell find $(SRC_DIR) -type f -name '*.zp')
 
 ZAP_ENTRY      := $(SRC_DIR)/main/main.zp
 
@@ -92,10 +93,10 @@ $(BIN_DIR)/%.o: $(SRC_DIR)/%.asm
 	@$(NASM) -f elf$(ARCH_M) $< -o $@
 
 # build zap entry point
-$(ZAP_LLIR): $(ZAP_ENTRY)
+$(ZAP_LLIR): $(ZAP_SOURCES)
 	@mkdir -p $(dir $@)
 	@echo -e "\033[1;36m[*]\033[0m zap sources -> $@"
-	@$(ZAPC) $(ZAP_FLAGS) $< -emit-llvm -o $@
+	@$(ZAPC) $(ZAP_FLAGS) $(ZAP_ENTRY) -emit-llvm -o $@
 
 $(ZAP_OBJ): $(ZAP_LLIR)
 	@mkdir -p $(dir $@)

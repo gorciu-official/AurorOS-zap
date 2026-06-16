@@ -1,32 +1,32 @@
+import "../lib/log";
 
 ext fun clearscreen();
 ext fun terminal_main(theme: UInt16) Int; // from /apps/terminal/tty.c
-ext fun println(s: *Char, color: UInt16);
 ext fun shutdown();
 
 @{extern("C"), noMangle}
 fun kmain() Void {
     clearscreen();
-    println("", 0x07);
-    println("                        @@@@@@@@@                           ", 0x0B);
-    println("                       @@@@@@@@@@@@@@                       ", 0x0B);
-    println("                       @@@@@@@@@@@@@@@@                     ", 0x0B);
-    println("                       @@@@@@@@@@@@@@@@                     ", 0x0B);
-    println("                    @@@@@@@@@@@@@@@@@@@     @@@@@           ", 0x0B);
-    println("                    @@@@@@@@@@@@@@@@@@     @@@@@@@@         ", 0x0B);
-    println("                    @@@@@@@@@@@@@@@@      @@@@@@@@@@        ", 0x0B);
-    println("                    @@@@@@@@@@@@@@@@     @@@@@@@@@@@        ", 0x0B);
-    println("                    @@@@@@@@@@@@@@@@    @@@@@   @@@@@       ", 0x0B);
-    println("               @@@@@@@@@@@@@@@@@@@@    @@@@@@   @@@@@@      ", 0x0B);
-    println("               @@@@@@@@@@@@@@@@@@     @@@@@@     @@@@@@     ", 0x0B);
-    println("                @@@@@@@@@@@@@@@@     @@@@@@       @@@@@     ", 0x0B);
-    println("                 @@@@@@@@@@@@@@@    @@@@@@@@@@@@@@@@@@@@    ", 0x0B);
-    println("                  @@@@@@@@@@@@     @@@@@@@@@@@@@@@@@@@@@@   ", 0x0B);
-    println("                      @@@@@       @@@@@@@@@@@@@@@@@@@@@@@@  ", 0x0B);
-    println("                                 @@@@@@             @@@@@@  ", 0x0B);
-    println("                                 @@@@@@             @@@@@@  ", 0x0B);
-    println("                                  @@@@               @@@@   ", 0x0B);
-    println("", 0x07);
+    log.println("");
+    log.println("                        @@@@@@@@@                           ", 0x0B);
+    log.println("                       @@@@@@@@@@@@@@                       ", 0x0B);
+    log.println("                       @@@@@@@@@@@@@@@@                     ", 0x0B);
+    log.println("                       @@@@@@@@@@@@@@@@                     ", 0x0B);
+    log.println("                    @@@@@@@@@@@@@@@@@@@     @@@@@           ", 0x0B);
+    log.println("                    @@@@@@@@@@@@@@@@@@     @@@@@@@@         ", 0x0B);
+    log.println("                    @@@@@@@@@@@@@@@@      @@@@@@@@@@        ", 0x0B);
+    log.println("                    @@@@@@@@@@@@@@@@     @@@@@@@@@@@        ", 0x0B);
+    log.println("                    @@@@@@@@@@@@@@@@    @@@@@   @@@@@       ", 0x0B);
+    log.println("               @@@@@@@@@@@@@@@@@@@@    @@@@@@   @@@@@@      ", 0x0B);
+    log.println("               @@@@@@@@@@@@@@@@@@     @@@@@@     @@@@@@     ", 0x0B);
+    log.println("                @@@@@@@@@@@@@@@@     @@@@@@       @@@@@     ", 0x0B);
+    log.println("                 @@@@@@@@@@@@@@@    @@@@@@@@@@@@@@@@@@@@    ", 0x0B);
+    log.println("                  @@@@@@@@@@@@     @@@@@@@@@@@@@@@@@@@@@@   ", 0x0B);
+    log.println("                      @@@@@       @@@@@@@@@@@@@@@@@@@@@@@@  ", 0x0B);
+    log.println("                                 @@@@@@             @@@@@@  ", 0x0B);
+    log.println("                                 @@@@@@             @@@@@@  ", 0x0B);
+    log.println("                                  @@@@               @@@@   ", 0x0B);
+    log.println("");
 
     terminal_main(0x0B);
 

@@ -51,6 +51,12 @@ void printstr(const char *str, uint8_t color) {
     }
 }
 
+void printstr_len(const char *str, uint32_t length, uint8_t color) {
+    for (uint32_t i = 0; i < length && str[i] != '\0'; i++) {
+        printchar(str[i], color);
+    }
+}
+
 void printint(uint16_t value, uint8_t color) {
     char buffer[6];
     int index = 5;
@@ -125,8 +131,7 @@ void paintline(uint16_t line, uint8_t color) {
     }
 }
 
-void printct(const char *str, uint8_t color) {
-    int length = strlen(str);
+void printct_len(const char *str, uint8_t color, uint64_t length) {
     if (length > SCREEN_WIDTH) {
         length = SCREEN_WIDTH;
     }
@@ -144,4 +149,8 @@ void printct(const char *str, uint8_t color) {
     }
 
     update_cursor();
+}
+
+void printct(const char *str, uint8_t color) {
+    return printct_len(str, color, strlen(str));
 }

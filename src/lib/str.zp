@@ -1,0 +1,5 @@
+pub struct StringView {
+  data: *Char,
+  len:   Int,
+}
+
