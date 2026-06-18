@@ -44,7 +44,15 @@ CFLAGS := \
 	-g -Wall -Wextra -m$(ARCH_M) -mno-sse -mno-sse2 -mno-sse3 -mno-mmx \
 	-ffreestanding -nostartfiles -Iinclude -nostdlib -fno-stack-protector
 
-ZAP_FLAGS := -nostdlib -noprelude -O2
+ZAP_IMPORT_MAPS := 						   \
+	--import-map @drivers="src/drivers/"   \
+	--import-map @lib="src/lib"            \
+	--import-map @main="src/main"          \
+	--import-map @kernel="src/main/kernel" \
+	--import-map @arch="src/arch"          \
+	--import-map @apps="src/apps"
+
+ZAP_FLAGS := -nostdlib -noprelude -O2 $(ZAP_IMPORT_MAPS)
 LLC_FLAGS := --mtriple=$(LLVM_TARGET)
 
 # sources
@@ -77,8 +85,14 @@ OBJECTS        := $(C_OBJECTS) $(ASM_OBJECTS) $(ZAP_OBJ)
 all: build-kernel build-iso
 	@echo -e "\033[32mSuccess!\033[0m"
 
+# force target
+FORCE:
+
 build-kernel: $(KERNEL_BIN)
 build-iso:    $(ISO_FILE)
+
+zap_flags.txt: FORCE
+	echo "$(ZAP_FLAGS)" > zap_flags.txt
 
 # build c sources
 $(BIN_DIR)/%.o: $(SRC_DIR)/%.c
@@ -96,7 +110,7 @@ $(BIN_DIR)/%.o: $(SRC_DIR)/%.asm
 $(ZAP_LLIR): $(ZAP_SOURCES)
 	@mkdir -p $(dir $@)
 	@echo -e "\033[1;36m[*]\033[0m zap sources -> $@"
-	@$(ZAPC) $(ZAP_FLAGS) $(ZAP_ENTRY) -emit-llvm -o $@
+	@$(ZAPC) $(ZAP_FLAGS) $(ZAP_ENTRY) -S -emit-llvm -o $@
 
 $(ZAP_OBJ): $(ZAP_LLIR)
 	@mkdir -p $(dir $@)

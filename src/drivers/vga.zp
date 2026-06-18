@@ -1,5 +1,5 @@
-import "misc/ports" { outb, inb };
-import "../lib/sv" { StringView };
+import "@drivers/misc/ports" { outb };
+import "@lib/sv" { StringView };
 
 pub alias Color = UInt8;
 pub const DEFAULT_COLOR: Color = 0x07;

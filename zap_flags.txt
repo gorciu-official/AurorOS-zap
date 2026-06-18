@@ -1,1 +1,1 @@
--nostdlib -noprelude
+-nostdlib -noprelude -O2 --import-map @drivers=src/drivers/ --import-map @lib=src/lib --import-map @main=src/main --import-map @kernel=src/main/kernel --import-map @arch=src/arch --import-map @apps=src/apps

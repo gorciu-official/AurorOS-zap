@@ -1,7 +1,7 @@
-pub import "../drivers/vga";
-pub import "../drivers/vga" { Color };
+pub import "@drivers/vga";
+pub import "@drivers/vga" { Color };
 
-pub import "../lib/sv" { StringView };
+pub import "@lib/sv" { StringView };
 
 pub fun printError(str: StringView) {
     vga.printString("[ ");
