@@ -5,6 +5,10 @@ pub struct StringView {
 
 pub const NULL: StringView = StringView { data: null, len: 0 };
 
+pub fun isNull(s: StringView) Bool {
+    return s.data == null;
+}
+
 @noMangle // zapc emits call to function "at" when indexing a StringView using the [] operator
 pub fun at(s: StringView, index: UInt32) Char {
     unsafe { return *(s.data + index); }

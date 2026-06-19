@@ -1,0 +1,83 @@
+import "@drivers/vga";
+
+import "@lib/sv" { StringView };
+import "@lib/log";
+
+const COLOR_1: vga.Color = 0x4E;
+const COLOR_2: vga.Color = 0x4F;
+const COLOR_3: vga.Color = 0x48;
+
+fun kernelPanic(code: StringView, devnote: StringView) {
+    unsafe { asm("cli" ::: "memory"); }
+
+    vga.paintScreen(COLOR_3);
+    log.println(" ", COLOR_1);
+    log.println(" Kernel panic!", COLOR_2);
+    log.println(" ", COLOR_1);
+    log.print(" AurorOS has encountered a critical problem and could not continue!", COLOR_1);
+    log.println(" ", COLOR_1);
+    log.print(" Kernel panic code: ", COLOR_1);
+    log.print(code, COLOR_2);
+    log.println(" ", COLOR_1);
+
+    /*
+    If a developer note is provided, print it after the panic code.
+    Please note that VGA resolution doesn't provide much space, so notes should be short and formatted properly.
+    Developers are encouraged to use adjacent char* literals when writing devnotes. For example, every newline in devnote can be a start of next char* literal, just like below:
+
+    kernelpanic("GRAPHICS_PROCESSOR_FAILURE",
+            "GPU has malfunctioned and system has crashed."
+            "\n This may be caused by recent hardware changes, "
+            "\n loose GPU power cable (if applicable to your graphics processor), "
+            "\n or by faulty/corrupted driver (if occurs after an update). "
+            "\n You can attempt to reboot after restoring last working hardware configuration "
+            "\n and making sure everything (power cable/the GPU itself) is connected correctly. "
+            "\n If none of this works, you might need to revert to earlier version of AurorOS.");
+
+    This way, code is much more readable than if it was written in a single long line.*/
+
+    if (!sv.isNull(devnote)) {
+        log.println(" ", COLOR_1);
+        log.print(" Developer note: ", COLOR_1);
+        log.print(devnote, COLOR_2);
+        log.println(" ", COLOR_1);
+    } else {
+        log.println(" ", COLOR_1);
+        log.println(
+            " No developer note is available for this kernel panic code.
+            \n We recommend you to get help in the Internet or AurorOS documentation
+            \n\n You can create a feature request to add a developer note here:
+            \n https://github.com/Interpuce/AurorOS/issues/new?template=feature.yaml",
+            COLOR_2
+        );
+        log.print(" ", COLOR_1);
+    }
+
+    log.println(" ", COLOR_1);
+    log.print(" System halted and will not power off automatically. \n You can turn off your device manually by holding the power button.", COLOR_1);
+
+    while (true) {
+        unsafe {
+            asm(
+                "xor %%eax, %%eax\n
+                 xor %%ebx, %%ebx\n
+                 xor %%ecx, %%ecx\n
+                 xor %%edx, %%edx\n
+                 xor %%esi, %%esi\n
+                 xor %%edi, %%edi\n"
+                :
+                :
+                : "%eax", "%ebx", "%ecx", "%edx", "%esi", "%edi"
+            );
+            asm("cli; hlt\n");
+        }
+    }
+}
+
+// C compatibility layer
+// TODO: delete this section after the entire
+//       kernel has been rewritten in zap
+@{extern("C"), noMangle}
+fun kernelpanic(code: *Char, devnote: *Char) {
+    kernelPanic(sv.fromNullTerm(code), sv.fromNullTerm(devnote));
+}
