@@ -1,0 +1,164 @@
+import "@drivers/misc/ports" { inb };
+import "@drivers/vga";
+
+import "@lib/sv" { StringView };
+import "@lib/log";
+
+const KEYMAP: [128]Char = {
+    '\0', 27 as Char, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',
+    '\t', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n', '\0',
+    'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', '`', '\0', '\\', 'z',
+    'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', '\0', '*', '\0', ' ', '\0', '\0',
+    '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '-', '\0', '\0', '\0',
+    '+', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
+    '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
+    '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
+    '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0'
+};
+
+const SHIFT_KEYMAP: [128]Char = {
+    '\0', 27 as Char, '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '\b',
+    '\t', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', '\n', '\0',
+    'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '"', '~', '\0', '|', 'Z',
+    'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?', '\0', '*', '\0', ' ', '\0', '\0',
+    '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '-',
+    '+', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
+    '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
+    '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
+    '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0'
+};
+
+global var leftShiftPressed: Bool = false;
+global var rightShiftPressed: Bool = false;
+
+global var keyStates: [128]Bool;
+
+fun readScancode() UInt8 {
+    if ((inb(0x64) & 0x01) == 0) {
+        return 0;
+    }
+    return inb(0x60);
+}
+
+fun at(buffer: *Char, index: UInt32) ref Char {
+    unsafe { return *(buffer + index); }
+}
+
+pub fun readString(buffer: *Char, maxLen: UInt32, secret: Bool, color: vga.Color, baseValue: StringView) {
+    var length: UInt32 = 0;
+
+    if (baseValue.len != 0) {
+        while baseValue[length] != '\0' && length < maxLen - 1 {
+            at(buffer, length) = baseValue[length];
+
+            if (secret) {
+                vga.printChar('*', color);
+            } else {
+                vga.printChar(baseValue[length], color);
+            }
+
+            length++;
+        }
+        at(buffer, length) = '\0';
+    } else {
+        at(buffer, 0) = '\0';
+    }
+
+    while (true) {
+        var scancode: UInt8 = readScancode();
+        var released: Bool = (scancode & 0x80) != 0;
+        var key = scancode & ~0x80;
+
+        if (key == 0) {
+            continue;
+        }
+
+        if (released) {
+            keyStates[key] = false;
+
+            if (key == 0x2A) {
+                leftShiftPressed = false;
+            } else if (key == 0x36) {
+                rightShiftPressed = false;
+            }
+            continue;
+        }
+
+        if (keyStates[key]) {
+            continue;
+        }
+
+        keyStates[key] = true;
+
+        if (key == 0x1C) {
+            at(buffer, length) = '\0';
+            vga.printChar('\n', 0x07);
+            break;
+        }
+
+        if (key == 0x0E) {
+            if (length > 0) {
+                length--;
+                at(buffer, length) = '\0';
+                vga.deleteChar();
+            }
+            continue;
+        }
+
+
+        var c: Char;
+        if key == 0x2A { leftShiftPressed = true;  continue; }
+        if key == 0x36 { rightShiftPressed = true; continue; }
+        c = (leftShiftPressed || rightShiftPressed) ? SHIFT_KEYMAP[key] : KEYMAP[key];
+
+        if (c == '\0') {
+            continue;
+        }
+
+        if (length < maxLen - 1) {
+            at(buffer,length) = c;
+            length++;
+            at(buffer, length) = '\0';
+
+            if (secret) {
+                vga.printChar('*', color);
+            } else {
+                vga.printChar(c, color);
+            }
+        }
+    }
+}
+
+fun readYn(text: StringView, color: vga.Color) Bool {
+    while (true) {
+        log.print(" ", color);
+        log.print(text, color);
+
+        var buffer: [2]Char;
+        readString(&buffer[0], 2, false, color, sv.NULL);
+
+        var bsv = sv.from(&buffer[0], 2);
+        if sv.eql(bsv, "Y") || sv.eql(bsv, "y") {
+            return true;
+        } else if sv.eql(bsv, "N") || sv.eql(bsv, "n") {
+            return false;
+        } else {
+            log.printError("Incorrect option!");
+        }
+        log.print("\n");
+    }
+    return false;
+}
+
+// C compatibility layer
+// TODO: delete this section after the entire
+//       kernel has been rewritten in zap
+@{extern("C"), noMangle}
+fun read_str(buffer: *Char, maxLen: UInt32, secret: UInt8, color: vga.Color, baseValue: *Char) {
+    readString(buffer, maxLen, secret != 0, color, sv.fromNullTerm(baseValue));
+}
+
+@{extern("C"), noMangle}
+fun read_yn(text: *Char, color: vga.Color) UInt8 {
+    return readYn(sv.fromNullTerm(text), color) ? 1 : 0;
+}

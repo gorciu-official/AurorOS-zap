@@ -1,4 +1,5 @@
 import "@drivers/vga";
+import "@drivers/ps2";
 import "@lib/log";
 
 ext fun terminal_main(theme: UInt16) Int; // from /apps/terminal/tty.c

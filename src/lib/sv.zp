@@ -3,10 +3,29 @@ pub struct StringView {
     len: UInt32,
 }
 
+pub const NULL: StringView = StringView { data: null, len: 0 };
+
+@noMangle // zapc emits call to function "at" when indexing a StringView using the [] operator
 pub fun at(s: StringView, index: UInt32) Char {
     unsafe { return *(s.data + index); }
 }
 
 pub fun from(d: *Char, l: UInt32) StringView {
     return StringView { data: d, len: l };
+}
+
+pub fun eql(a: StringView, b: StringView) Bool {
+    if a.len != b.len   { return false; }
+    if a.data == b.data { return true; }
+    for var i: UInt32 = 0; i < a.len; i++ {
+        if at(a, i) != at(b, i) {
+            return false;
+        }
+    }
+    return true;
+}
+
+ext fun strlen(cs: *Char) UInt32;
+pub fun fromNullTerm(cs: *Char) StringView {
+    return StringView { data: cs, len: strlen(cs) };
 }
