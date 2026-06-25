@@ -22,7 +22,7 @@ ext fun memcpy(dest: *Void, src: *Void, size: UInt64);
 
 ext var emulated_fs_root: *emulated_fs_node;
 
-@{extern("C"), noMangle} pub fun emulated_fs_create_dir_node(name: *Char, parent: *emulated_fs_node, owner: UInt64) *emulated_fs_node {
+pub fun createDirNode(name: *Char, parent: *emulated_fs_node, owner: UInt64) *emulated_fs_node {
     var node = malloc(sizeof(emulated_fs_node)) as *emulated_fs_node;
     memset(node as *Void, 0, sizeof(emulated_fs_node));
     strcpy(&node.name[0], name);
@@ -33,7 +33,7 @@ ext var emulated_fs_root: *emulated_fs_node;
     return node;
 }
 
-@{extern("C"), noMangle} pub fun emulated_fs_create_file_node(name: *Char, parent: *emulated_fs_node, owner: UInt64) *emulated_fs_node {
+pub fun createFileNode(name: *Char, parent: *emulated_fs_node, owner: UInt64) *emulated_fs_node {
     var node = malloc(sizeof(emulated_fs_node)) as *emulated_fs_node;
     memset(node as *Void, 0, sizeof(emulated_fs_node));
     strcpy(&node.name[0], name);
@@ -44,7 +44,7 @@ ext var emulated_fs_root: *emulated_fs_node;
     return node;
 }
 
-@{extern("C"), noMangle} pub fun emulated_fs_find_in(dir: *emulated_fs_node, name: *Char) *emulated_fs_node {
+pub fun findIn(dir: *emulated_fs_node, name: *Char) *emulated_fs_node {
     if (dir.type != 1) { return null; }
 
     for (var i: UInt32 = 0; i < dir.child_count; i++) {
@@ -54,23 +54,23 @@ ext var emulated_fs_root: *emulated_fs_node;
     return null;
 }
 
-@{extern("C"), noMangle} pub fun emulated_fs_init() {
+pub fun init() {
     emulated_fs_root = emulated_fs_create_dir_node("/", null, 0);
 }
 
-@{extern("C"), noMangle} pub fun emulated_fs_add_child(dir: *emulated_fs_node, child: *emulated_fs_node) {
+pub fun addChild(dir: *emulated_fs_node, child: *emulated_fs_node) {
     if (dir.type != 1) { return; }
     dir.children[dir.child_count] = child;
     dir.child_count = dir.child_count + 1;
     child.parent = dir;
 }
 
-@{extern("C"), noMangle} pub fun emulated_fs_delete(node: *emulated_fs_node) {
+pub fun delete(node: *emulated_fs_node) {
     if (node == null) { return; }
 
     if (node.type == 1) {
         for (var i: UInt32 = 0; i < node.child_count; i++) {
-            emulated_fs_delete(node.children[i]);
+            delete(node.children[i]);
         }
         free(&node.children[0] as *Void);
         node.child_count = 0;
@@ -82,7 +82,7 @@ ext var emulated_fs_root: *emulated_fs_node;
     free(node as *Void);
 }
 
-@{extern("C"), noMangle} pub fun emulated_fs_write(file: *emulated_fs_node, data: *Char, size: UInt32) {
+pub fun write(file: *emulated_fs_node, data: *Char, size: UInt32) {
     if (file.type != 0) { return; }
 
     if (file.size > 0) {
@@ -94,7 +94,7 @@ ext var emulated_fs_root: *emulated_fs_node;
     file.size = size;
 }
 
-@{extern("C"), noMangle} pub fun emulated_fs_read(file: *emulated_fs_node, out: *UInt8, max: UInt32) UInt32 {
+pub fun read(file: *emulated_fs_node, out: *UInt8, max: UInt32) UInt32 {
     if (file.type != 0) { return -1; }
 
     if (file.data == null || file.size == 0) {
@@ -111,8 +111,7 @@ ext var emulated_fs_root: *emulated_fs_node;
     return to_copy;
 }
 
-@{extern("C"), noMangle}
-pub fun emulated_fs_resolve(path: *Char, current_dir: *emulated_fs_node) *emulated_fs_node {
+pub fun resolve(path: *Char, current_dir: *emulated_fs_node) *emulated_fs_node {
     var current: *emulated_fs_node;
 
     unsafe { if (*(path + 0) == (47 as Char)) { // '/'
@@ -164,4 +163,35 @@ pub fun emulated_fs_resolve(path: *Char, current_dir: *emulated_fs_node) *emulat
     }
 
     return current;
+}
+
+// C COMPATIBILITY LAYER
+// TODO: delete when entire kernel has been rewrited to Zap
+
+@{extern("C"), noMangle} pub fun emulated_fs_create_file_node(name: *Char, parent: *emulated_fs_node, owner: UInt64) *emulated_fs_node {
+    return createFileNode(name, parent, owner);
+}
+@{extern("C"), noMangle} pub fun emulated_fs_create_dir_node(name: *Char, parent: *emulated_fs_node, owner: UInt64) *emulated_fs_node {
+    return createDirNode(name, parent, owner);
+}
+@{extern("C"), noMangle} pub fun emulated_fs_init() {
+    init();
+}
+@{extern("C"), noMangle} pub fun emulated_fs_resolve(path: *Char, current_dir: *emulated_fs_node) *emulated_fs_node {
+    return resolve(path, current_dir);
+}
+@{extern("C"), noMangle} pub fun emulated_fs_read(file: *emulated_fs_node, out: *UInt8, max: UInt32) UInt32 {
+    return read(file, out, max);
+}
+@{extern("C"), noMangle} pub fun emulated_fs_write(file: *emulated_fs_node, data: *Char, size: UInt32) {
+    write(file, data, size);
+}
+@{extern("C"), noMangle} pub fun emulated_fs_add_child(dir: *emulated_fs_node, child: *emulated_fs_node) {
+    addChild(dir, child);
+}
+@{extern("C"), noMangle} pub fun emulated_fs_delete(node: *emulated_fs_node) {
+    delete(node);
+}
+@{extern("C"), noMangle} pub fun emulated_fs_find_in(dir: *emulated_fs_node, name: *Char) *emulated_fs_node {
+    return findIn(dir, name);
 }
