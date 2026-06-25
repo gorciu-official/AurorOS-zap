@@ -65,3 +65,38 @@ pub fun init() {
     addChild(etc, groups);
     write(groups, "group {\n  name = sudo\n  desc = All users in this group will be able to use the sudo command.\n}\n\ngroup {\n  name = sudonopasswd\n  desc = All users in this group will be able to use the sudo command without the need to enter the user password.\n}", 243);
 }
+
+// C COMPATIBILTY LAYER
+// TODO: remove when the kernel is 100% in Zap 
+@{extern("C"), noMangle}
+pub fun fs_read(file: *emulated_fs_node, out: *UInt8, max: UInt32) UInt32 {
+    return fs_emulated.read(file, out, max);
+}
+@{extern("C"), noMangle}
+pub fun fs_write(file: *emulated_fs_node, data: *Char, size: UInt32) {
+    fs_emulated.write(file, data, size);
+}
+@{extern("C"), noMangle}
+pub fun fs_create_file_node(name: *Char, parent: *emulated_fs_node, owner: UInt64) *emulated_fs_node {
+    return fs_emulated.createFileNode(name, parent, owner);
+}
+@{extern("C"), noMangle}
+pub fun fs_create_dir_node(name: *Char, parent: *emulated_fs_node, owner: UInt64) *emulated_fs_node {
+    return fs_emulated.createDirNode(name, parent, owner);
+}
+@{extern("C"), noMangle}
+pub fun fs_add_child(dir: *emulated_fs_node, child: *emulated_fs_node) {
+    fs_emulated.addChild(dir, child);
+}
+@{extern("C"), noMangle}
+pub fun fs_resolve(path: *Char, dir: *emulated_fs_node) {
+    fs_emulated.resolve(path, dir);
+}
+@{extern("C"), noMangle}
+pub fun fs_find(dir: *emulated_fs_node, name: *Char) *emulated_fs_node {
+    return fs_emulated.findIn(dir, name);
+}
+@{extern("C"), noMangle}
+pub fun init_fs() {
+    init();
+}
