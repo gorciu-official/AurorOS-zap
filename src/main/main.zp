@@ -3,7 +3,7 @@ import "@kernel/panic";
 import "@drivers/vga";
 import "@drivers/ps2";
 
-import "@drivers/fs/fs_emulated";
+import "@drivers/fs/fs_general";
 
 import "@lib/log";
 
