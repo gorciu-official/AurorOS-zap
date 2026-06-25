@@ -3,7 +3,6 @@
 #include <fs/fs-emulated.h>
 #include <fs/filesystem.h>
 #include <panic.h>
-#include <asm/power.h>
 #include <asm/multiboot.h>
 #include <wait.h>
 
