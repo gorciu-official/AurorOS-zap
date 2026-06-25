@@ -37,7 +37,6 @@ fun kmain() Void {
     log.println("");
 
     terminal_main(0x0B);
-
-    shutdown();
+    
     return;
 }

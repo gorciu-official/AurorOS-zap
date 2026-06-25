@@ -7,7 +7,7 @@ const COLOR_1: vga.Color = 0x4E;
 const COLOR_2: vga.Color = 0x4F;
 const COLOR_3: vga.Color = 0x48;
 
-fun kernelPanic(code: StringView, devnote: StringView) {
+pub fun kernelPanic(code: StringView, devnote: StringView) {
     unsafe { asm("cli" ::: "memory"); }
 
     vga.paintScreen(COLOR_3);
@@ -44,10 +44,10 @@ fun kernelPanic(code: StringView, devnote: StringView) {
     } else {
         log.println(" ", COLOR_1);
         log.println(
-            " No developer note is available for this kernel panic code.
-            \n We recommend you to get help in the Internet or AurorOS documentation
-            \n\n You can create a feature request to add a developer note here:
-            \n https://github.com/Interpuce/AurorOS/issues/new?template=feature.yaml",
+            " No developer note is available for this kernel panic code."
+            + "\n We recommend you to get help in the Internet or AurorOS documentation"
+            + "\n\n You can create a feature request to add a developer note here:"
+            + "\n https://github.com/Interpuce/AurorOS/issues/new?template=feature.yaml",
             COLOR_2
         );
         log.print(" ", COLOR_1);

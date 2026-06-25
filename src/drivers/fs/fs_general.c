@@ -103,3 +103,5 @@ void init_fs() {
     fs_add_child(etc, groups);
     fs_write(groups, "group {\n  name = sudo\n  desc = All users in this group will be able to use the sudo command.\n}\n\ngroup {\n  name = sudonopasswd\n  desc = All users in this group will be able to use the sudo command without the need to enter the user password.\n}", 243);
 }
+
+emulated_fs_node* emulated_fs_root;

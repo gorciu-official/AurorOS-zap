@@ -28,7 +28,7 @@ ext var emulated_fs_root: *emulated_fs_node;
     strcpy(&node.name[0], name);
     node.type = 1;
     node.parent = parent;
-    node.permissions = 0o744;
+    node.permissions = 0o755;
     node.owner = owner;
     return node;
 }
@@ -39,7 +39,7 @@ ext var emulated_fs_root: *emulated_fs_node;
     strcpy(&node.name[0], name);
     node.type = 0;
     node.parent = parent;
-    node.permissions = 0o744;
+    node.permissions = 0o755;
     node.owner = owner;
     return node;
 }
@@ -92,4 +92,76 @@ ext var emulated_fs_root: *emulated_fs_node;
     file.data = malloc(size) as *Char;
     memcpy(file.data as *Void, data as *Void, size);
     file.size = size;
+}
+
+@{extern("C"), noMangle} pub fun emulated_fs_read(file: *emulated_fs_node, out: *UInt8, max: UInt32) UInt32 {
+    if (file.type != 0) { return -1; }
+
+    if (file.data == null || file.size == 0) {
+        unsafe { if (max > 0) { * (out + 0) = 0; } }
+        return 0;
+    }
+
+    var to_copy: UInt32 = (file.size < max ? file.size : max - 1);
+
+    memcpy(out as *Void, file.data as *Void, to_copy);
+
+    unsafe { *(out + to_copy) = 0; }
+
+    return to_copy;
+}
+
+@{extern("C"), noMangle}
+pub fun emulated_fs_resolve(path: *Char, current_dir: *emulated_fs_node) *emulated_fs_node {
+    var current: *emulated_fs_node;
+
+    unsafe { if (*(path + 0) == (47 as Char)) { // '/'
+        current = emulated_fs_root;
+        path = path + 1;
+    } else {
+        current = current_dir;
+    }
+    }
+
+    var token: [32]Char;
+    var pos: UInt32 = 0;
+
+    unsafe {
+    for (var i: UInt32 = 0; true; i = i + 1) {
+        var c: Char = *(path + i);
+
+        if ((c == (47 as Char)) || c == (0 as Char)) { // '/' or '\0'
+            token[pos] = 0 as Char;
+
+            if (pos > 0) {
+                if (streql(&token[0], ".")) {
+                    // no-op
+                }
+                else if (streql(&token[0], "..")) {
+                    if (current.parent != null) {
+                        current = current.parent;
+                    }
+                }
+                else {
+                    current = emulated_fs_find_in(current, &token[0]);
+                    if (current == null) {
+                        return null;
+                    }
+                }
+            }
+
+            pos = 0;
+
+            if (c == (0 as Char)) {
+                break;
+            }
+            continue;
+        }
+
+        token[pos] = c;
+        pos = pos + 1;
+    }
+    }
+
+    return current;
 }
