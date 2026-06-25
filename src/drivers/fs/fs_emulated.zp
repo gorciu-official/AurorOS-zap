@@ -1,41 +1,9 @@
-/**
-
-associated c code for reference:
-
-emulated_fs_node* emulated_fs_create_dir_node(const char* name, emulated_fs_node* parent, uint64_t owner) {
-    emulated_fs_node* node = malloc(sizeof(emulated_fs_node));
-    memset(node, 0, sizeof(emulated_fs_node));
-    strcpy(node->name, name);
-    node->type = EMULATED_FS_DIR;
-    node->parent = parent;
-    node->permissions = MK_DEFAULT_PERMISSIONS(0777);
-    node->owner = owner;
-    return node;
-}
-typedef struct emulated_fs_node {
-    // base
-    char name[32];
-    emulated_fs_node_type type;
-    struct emulated_fs_node* parent;
-
-    // permissions
-    uint16_t permissions;
-    uint64_t owner;
-
-    // contents
-    char* data;
-    uint32_t size;
-
-    // children
-    struct emulated_fs_node* children[64];
-    uint32_t child_count;
-} emulated_fs_node;
-*/
-
 ext fun malloc(bytes: UInt64) *Void;
 ext fun memset(ptr: *Void, value: UInt8, size: UInt64);
 ext fun strcpy(dest: *Char, src: *Char);
 ext fun streql(str1: *Char, str2: *Char) Bool;
+ext fun free(ptr: *Void);
+ext fun memcpy(dest: *Void, src: *Void, size: UInt64);
 
 @repr("C") pub struct emulated_fs_node {
     name: [32]Char,
@@ -52,6 +20,8 @@ ext fun streql(str1: *Char, str2: *Char) Bool;
     child_count: UInt32
 }
 
+ext var emulated_fs_root: *emulated_fs_node;
+
 @{extern("C"), noMangle} pub fun emulated_fs_create_dir_node(name: *Char, parent: *emulated_fs_node, owner: UInt64) *emulated_fs_node {
     var node = malloc(sizeof(emulated_fs_node)) as *emulated_fs_node;
     memset(node as *Void, 0, sizeof(emulated_fs_node));
@@ -63,21 +33,16 @@ ext fun streql(str1: *Char, str2: *Char) Bool;
     return node;
 }
 
-/**
-reference c code:
-
-
-
-emulated_fs_node* emulated_fs_find_in(emulated_fs_node* dir, const char* name) {
-    if (dir->type != EMULATED_FS_DIR) return NULL;
-
-    for (uint32_t i = 0; i < dir->child_count; i++) {
-        if (streql(dir->children[i]->name, name))
-            return dir->children[i];
-    }
-    return NULL;
+@{extern("C"), noMangle} pub fun emulated_fs_create_file_node(name: *Char, parent: *emulated_fs_node, owner: UInt64) *emulated_fs_node {
+    var node = malloc(sizeof(emulated_fs_node)) as *emulated_fs_node;
+    memset(node as *Void, 0, sizeof(emulated_fs_node));
+    strcpy(&node.name[0], name);
+    node.type = 0;
+    node.parent = parent;
+    node.permissions = 0o744;
+    node.owner = owner;
+    return node;
 }
-*/ 
 
 @{extern("C"), noMangle} pub fun emulated_fs_find_in(dir: *emulated_fs_node, name: *Char) *emulated_fs_node {
     if (dir.type != 1) { return null; }
@@ -87,4 +52,44 @@ emulated_fs_node* emulated_fs_find_in(emulated_fs_node* dir, const char* name) {
     }
 
     return null;
+}
+
+@{extern("C"), noMangle} pub fun emulated_fs_init() {
+    emulated_fs_root = emulated_fs_create_dir_node("/", null, 0);
+}
+
+@{extern("C"), noMangle} pub fun emulated_fs_add_child(dir: *emulated_fs_node, child: *emulated_fs_node) {
+    if (dir.type != 1) { return; }
+    dir.children[dir.child_count] = child;
+    dir.child_count = dir.child_count + 1;
+    child.parent = dir;
+}
+
+@{extern("C"), noMangle} pub fun emulated_fs_delete(node: *emulated_fs_node) {
+    if (node == null) { return; }
+
+    if (node.type == 1) {
+        for (var i: UInt32 = 0; i < node.child_count; i++) {
+            emulated_fs_delete(node.children[i]);
+        }
+        free(&node.children[0] as *Void);
+        node.child_count = 0;
+    } else if (node.type == 0) {
+        free(node.data as *Void);
+        node.data = null;
+    }
+
+    free(node as *Void);
+}
+
+@{extern("C"), noMangle} pub fun emulated_fs_write(file: *emulated_fs_node, data: *Char, size: UInt32) {
+    if (file.type != 0) { return; }
+
+    if (file.size > 0) {
+        free(file.data as *Void);
+    }
+
+    file.data = malloc(size) as *Char;
+    memcpy(file.data as *Void, data as *Void, size);
+    file.size = size;
 }

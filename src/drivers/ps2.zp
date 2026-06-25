@@ -137,7 +137,7 @@ fun readYn(text: StringView, color: vga.Color) Bool {
         var buffer: [2]Char;
         readString(&buffer[0], 2, false, color, sv.NULL);
 
-        var bsv = sv.from(&buffer[0], 2);
+        var bsv = sv.from(&buffer[0], 1);
         if sv.eql(bsv, "Y") || sv.eql(bsv, "y") {
             return true;
         } else if sv.eql(bsv, "N") || sv.eql(bsv, "n") {

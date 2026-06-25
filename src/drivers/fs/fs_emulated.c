@@ -7,23 +7,6 @@
 
 emulated_fs_node* emulated_fs_root;
 
-emulated_fs_node* emulated_fs_create_file_node(const char* name, emulated_fs_node* parent, uint64_t owner) {
-    emulated_fs_node* node = malloc(sizeof(emulated_fs_node));
-    memset(node, 0, sizeof(emulated_fs_node));
-    strcpy(node->name, name);
-    node->type = EMULATED_FS_FILE;
-    node->parent = parent;
-    node->permissions = MK_DEFAULT_PERMISSIONS(0777);
-    node->owner = owner; 
-    return node;
-}
-
-void emulated_fs_add_child(emulated_fs_node* dir, emulated_fs_node* child) {
-    if (dir->type != EMULATED_FS_DIR) return;
-    dir->children[dir->child_count++] = child;
-    child->parent = dir;
-}
-
 emulated_fs_node* emulated_fs_resolve(const char* path, emulated_fs_node* current_dir) {
     emulated_fs_node* current;
 
@@ -67,16 +50,7 @@ emulated_fs_node* emulated_fs_resolve(const char* path, emulated_fs_node* curren
     return current;
 }
 
-void emulated_fs_write(emulated_fs_node* file, char* data, uint32_t size) {
-    if (file->type != EMULATED_FS_FILE) return;
 
-    if (file->size > 0)
-        free(file->data);
-
-    file->data = malloc(size);
-    memcpy(file->data, data, size);
-    file->size = size;
-}
 
 int emulated_fs_read(emulated_fs_node* file, uint8_t* out, uint32_t max) {
     if (file->type != EMULATED_FS_FILE) 
@@ -94,25 +68,4 @@ int emulated_fs_read(emulated_fs_node* file, uint8_t* out, uint32_t max) {
     out[to_copy] = 0;
 
     return to_copy;
-}
-
-void emulated_fs_init() {
-    emulated_fs_root = emulated_fs_create_dir_node("/", NULL, 0);
-}
-
-void emulated_fs_delete(emulated_fs_node* node) {
-    if (!node) return;
-
-    if (node->type == EMULATED_FS_DIR) {
-        for (uint32_t i = 0; i < node->child_count; i++) {
-            emulated_fs_delete(node->children[i]);
-        }
-        free(node->children);
-        node->child_count = 0;
-    } else if (node->type == EMULATED_FS_FILE) {
-        free(node->data);
-        node->data = NULL;
-    }
-
-    free(node);
 }
