@@ -2,30 +2,26 @@
     <img width="699" height="464" alt="image" src="https://github.com/user-attachments/assets/fc76eb15-7a22-4843-9834-8a6d2fe9121a" />
 </p>
 
-# AurorOS
+# AurorOS-Zap
 
-A lightweight, custom OS made by Interpuce without any external dependencies.
+An [AurorOS](https://github.com/Interpuce/AurorOS) distribution that aims to slowly rewrite the OS to the [Zap programming language](https://github.com/thezaplang/zap).
 
-- **debuggable:** working IDT and ability to debug the kernel via gdb using the `run_dbg` make target
-- **minimal:** can start in miliseconds and the code is fairly simple
-- **multi-architecture:** AurorOS works in both `x86` (32-bit mode) and `x86_64` (64-bit mode)
+## Progress
 
-> [!TIP]
-> You can join our official [Discord server](https://discord.gg/kSv7KdFhGq) for announcements, changes and much more.
+**Fully rewrited:**
 
-## Downloading
+- PS/2 driver 
+- VGA driver
+- kernel panic
 
-Navigate to [AurorOS's GitHub releases page](https://github.com/Interpuce/AurorOS/releases) and download the latest stable release.
+**Work in progress:**
 
-## Contributions
+- filesystem driver
 
-Contributions are welcome. [Learn more](https://github.com/Interpuce/AurorOS/blob/main/docs/CONTRIBUTING.md) about contributing to AurorOS.
+If you want to rewrite something to Zap, or improve already rewrited part of the OS, you can always create a pull request.
 
-## Copyright & License
+## Copyright
 
-AurorOS is maintained by the members of Interpuce organization:
+AurorOS-Zap is a fork of [AurorOS](https://github.com/Interpuce/AurorOS), maintained by Interpuce. 
 
-- [Ekler25](https://github.com/Ekler25)
-- [Gorciu](https://github.com/gorciu-official)
-
-AurorOS is currently licensed under [GNU General Public License, version 3](https://github.com/Interpuce/AurorOS/blob/main/LICENSE).
+AurorOS and therefore AurorOS-Zap are currently licensed under [GNU General Public License, version 3](https://github.com/Interpuce/AurorOS/blob/main/LICENSE).

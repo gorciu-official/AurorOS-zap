@@ -1,0 +1,90 @@
+/**
+
+associated c code for reference:
+
+emulated_fs_node* emulated_fs_create_dir_node(const char* name, emulated_fs_node* parent, uint64_t owner) {
+    emulated_fs_node* node = malloc(sizeof(emulated_fs_node));
+    memset(node, 0, sizeof(emulated_fs_node));
+    strcpy(node->name, name);
+    node->type = EMULATED_FS_DIR;
+    node->parent = parent;
+    node->permissions = MK_DEFAULT_PERMISSIONS(0777);
+    node->owner = owner;
+    return node;
+}
+typedef struct emulated_fs_node {
+    // base
+    char name[32];
+    emulated_fs_node_type type;
+    struct emulated_fs_node* parent;
+
+    // permissions
+    uint16_t permissions;
+    uint64_t owner;
+
+    // contents
+    char* data;
+    uint32_t size;
+
+    // children
+    struct emulated_fs_node* children[64];
+    uint32_t child_count;
+} emulated_fs_node;
+*/
+
+ext fun malloc(bytes: UInt64) *Void;
+ext fun memset(ptr: *Void, value: UInt8, size: UInt64);
+ext fun strcpy(dest: *Char, src: *Char);
+ext fun streql(str1: *Char, str2: *Char) Bool;
+
+@repr("C") pub struct emulated_fs_node {
+    name: [32]Char,
+    type: UInt32,
+    parent: *emulated_fs_node,
+
+    permissions: UInt16,
+    owner: UInt64, // user id probably
+
+    data: *Char,
+    size: UInt32,
+
+    children: [64]*emulated_fs_node,
+    child_count: UInt32
+}
+
+@{extern("C"), noMangle} pub fun emulated_fs_create_dir_node(name: *Char, parent: *emulated_fs_node, owner: UInt64) *emulated_fs_node {
+    var node = malloc(sizeof(emulated_fs_node)) as *emulated_fs_node;
+    memset(node as *Void, 0, sizeof(emulated_fs_node));
+    strcpy(&node.name[0], name);
+    node.type = 1;
+    node.parent = parent;
+    node.permissions = 0o744;
+    node.owner = owner;
+    return node;
+}
+
+/**
+reference c code:
+
+
+
+emulated_fs_node* emulated_fs_find_in(emulated_fs_node* dir, const char* name) {
+    if (dir->type != EMULATED_FS_DIR) return NULL;
+
+    for (uint32_t i = 0; i < dir->child_count; i++) {
+        if (streql(dir->children[i]->name, name))
+            return dir->children[i];
+    }
+    return NULL;
+}
+*/ 
+
+@{extern("C"), noMangle} pub fun emulated_fs_find_in(dir: *emulated_fs_node, name: *Char) *emulated_fs_node {
+    if (dir.type != 1) { return null; }
+
+    for (var i: UInt32 = 0; i < dir.child_count; i++) {
+        if (streql(&dir.children[i].name[0], name)) { return dir.children[i]; }
+    }
+
+    return null;
+}

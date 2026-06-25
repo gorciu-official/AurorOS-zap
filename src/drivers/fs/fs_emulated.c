@@ -7,17 +7,6 @@
 
 emulated_fs_node* emulated_fs_root;
 
-emulated_fs_node* emulated_fs_create_dir_node(const char* name, emulated_fs_node* parent, uint64_t owner) {
-    emulated_fs_node* node = malloc(sizeof(emulated_fs_node));
-    memset(node, 0, sizeof(emulated_fs_node));
-    strcpy(node->name, name);
-    node->type = EMULATED_FS_DIR;
-    node->parent = parent;
-    node->permissions = MK_DEFAULT_PERMISSIONS(0777);
-    node->owner = owner;
-    return node;
-}
-
 emulated_fs_node* emulated_fs_create_file_node(const char* name, emulated_fs_node* parent, uint64_t owner) {
     emulated_fs_node* node = malloc(sizeof(emulated_fs_node));
     memset(node, 0, sizeof(emulated_fs_node));
@@ -33,16 +22,6 @@ void emulated_fs_add_child(emulated_fs_node* dir, emulated_fs_node* child) {
     if (dir->type != EMULATED_FS_DIR) return;
     dir->children[dir->child_count++] = child;
     child->parent = dir;
-}
-
-emulated_fs_node* emulated_fs_find_in(emulated_fs_node* dir, const char* name) {
-    if (dir->type != EMULATED_FS_DIR) return NULL;
-
-    for (uint32_t i = 0; i < dir->child_count; i++) {
-        if (streql(dir->children[i]->name, name))
-            return dir->children[i];
-    }
-    return NULL;
 }
 
 emulated_fs_node* emulated_fs_resolve(const char* path, emulated_fs_node* current_dir) {
