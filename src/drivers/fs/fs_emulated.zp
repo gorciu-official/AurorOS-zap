@@ -54,8 +54,9 @@ pub fun findIn(dir: *emulated_fs_node, name: *Char) *emulated_fs_node {
     return null;
 }
 
-pub fun init() {
+pub fun init() *emulated_fs_node {
     emulated_fs_root = emulated_fs_create_dir_node("/", null, 0);
+    return emulated_fs_root;
 }
 
 pub fun addChild(dir: *emulated_fs_node, child: *emulated_fs_node) {
@@ -174,8 +175,8 @@ pub fun resolve(path: *Char, current_dir: *emulated_fs_node) *emulated_fs_node {
 @{extern("C"), noMangle} pub fun emulated_fs_create_dir_node(name: *Char, parent: *emulated_fs_node, owner: UInt64) *emulated_fs_node {
     return createDirNode(name, parent, owner);
 }
-@{extern("C"), noMangle} pub fun emulated_fs_init() {
-    init();
+@{extern("C"), noMangle} pub fun emulated_fs_init() *emulated_fs_node {
+    return init();
 }
 @{extern("C"), noMangle} pub fun emulated_fs_resolve(path: *Char, current_dir: *emulated_fs_node) *emulated_fs_node {
     return resolve(path, current_dir);

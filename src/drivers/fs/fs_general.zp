@@ -1,0 +1,67 @@
+import "@drivers/fs/fs_emulated";
+
+alias emulated_fs_node = fs_emulated.emulated_fs_node;
+
+ext var fs_root: *emulated_fs_node;
+ext fun strlen(str: *Char) UInt32;
+
+pub fun read(file: *emulated_fs_node, out: *UInt8, max: UInt32) UInt32 {
+    return fs_emulated.read(file, out, max);
+}
+
+pub fun write(file: *emulated_fs_node, data: *Char, size: UInt32) {
+    fs_emulated.write(file, data, size);
+}
+
+pub fun createFileNode(name: *Char, parent: *emulated_fs_node, owner: UInt64) *emulated_fs_node {
+    return fs_emulated.createFileNode(name, parent, owner);
+}
+
+pub fun createDirNode(name: *Char, parent: *emulated_fs_node, owner: UInt64) *emulated_fs_node {
+    return fs_emulated.createDirNode(name, parent, owner);
+}
+
+pub fun addChild(dir: *emulated_fs_node, child: *emulated_fs_node) {
+    fs_emulated.addChild(dir, child);
+}
+
+pub fun init() {
+    fs_root = fs_emulated.init(); 
+    
+    // bin folder
+    var bin: *emulated_fs_node = createDirNode("bin", fs_root, 0);
+    bin.permissions = 0o755;
+    addChild(fs_root, bin);
+    
+    // home dirs
+    var home: *emulated_fs_node = createDirNode("home", fs_root, 0);
+    home.permissions = 0o755;
+    addChild(fs_root, home);
+
+    var user: *emulated_fs_node = createDirNode("liveuser", home, 1001);
+    addChild(home, user);
+
+    var root: *emulated_fs_node = createDirNode("root", fs_root, 0);
+    root.permissions = 0o755;
+    addChild(fs_root, root);
+    
+    // etc folder
+    var etc: *emulated_fs_node = createDirNode("etc", fs_root, 0);
+    etc.permissions = 0o755;
+    addChild(fs_root, etc); 
+
+    // user files
+    var notes: *emulated_fs_node = createFileNode("README.txt", user, 1001);
+    addChild(user, notes);
+    write(notes, "Welcome to AurorOS!", 23);
+    
+    // system files
+    var users: *emulated_fs_node = createFileNode("users", etc, 0);
+    addChild(etc, users);
+    var users_content: *Char = "0:root:x::\n1001:liveuser:x:sudo,sudonopasswd:";
+    write(users, users_content, strlen(users_content));
+
+    var groups: *emulated_fs_node = createFileNode("groups", etc, 0);
+    addChild(etc, groups);
+    write(groups, "group {\n  name = sudo\n  desc = All users in this group will be able to use the sudo command.\n}\n\ngroup {\n  name = sudonopasswd\n  desc = All users in this group will be able to use the sudo command without the need to enter the user password.\n}", 243);
+}
